@@ -408,6 +408,27 @@ k_mean_result = f_k_means(optim_result, 6)
 # Q7: Input the clusters from k means clustering
 output = paste(sep = "\n", output, "@kmeans",
                paste(as.vector(as.numeric(unname(k_mean_result[["data"]][, "cluster"])) - 1), collapse = ","))
+
+# Q8: Enter the cluster centers from k means clustering
+output = paste(sep = "\n", output, "@centers")
+for(k_index in 1:6) {
+  output = paste(sep = "\n", output,
+                 paste(as.vector(unname(k_mean_result$center[[k_index]])), collapse = ","))
+}
+rm(k_index)
+
+# Q9: Enter the total distortion (use sum of squared distances)
+totalDistortion = 0
+for(data_index in 1:length(k_mean_result$data[, 1])) {
+  center_index = k_mean_result$data[data_index, "cluster"]
+  totalDistortion = totalDistortion +
+    (as.numeric(k_mean_result$data[data_index, "L"]) - as.numeric(k_mean_result$center[[center_index]]$"L"))^2 + 
+    (as.numeric(k_mean_result$data[data_index, "k"]) - as.numeric(k_mean_result$center[[center_index]]$"k"))^2 + 
+    (as.numeric(k_mean_result$data[data_index, "x_0"]) - as.numeric(k_mean_result$center[[center_index]]$"x_0"))^2
+}
+output = paste(sep = "\n", output, "@answer_9", totalDistortion)
+
+rm(k_mean_result, optim_result, f_k_means)
 ```
 
 
@@ -418,5 +439,4 @@ output = paste(sep = "\n", output, "@answer_10", "None") # Footer for output fil
 write(output, file = "output.txt", append = FALSE) # write results
 rm(list = ls())
 ```
-
 

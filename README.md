@@ -42,3 +42,7 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
   (`hacc`) Input the clusters from complete linkage hierarchical clustering (one line containing n integers from 0 to the k-1, comma separated).
 - **Q7**  
   (`kmeans`) Input the clusters from k means clustering (one line containing n integers from 0 to the k-1, comma separated).
+- **Q8**  
+  (`centers`) Enter the cluster centers from k means clustering (k lines, each line containing m numbers, comma separated, rounded to 4 decimal places).
+- **Q9**  
+  Enter the total distortion (use sum of squared distances) of the clustering from the previous two questions.
