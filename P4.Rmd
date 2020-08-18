@@ -185,13 +185,229 @@ for(row_index in 1:length(optim_result[, 1])) {
                  paste(as.vector(unname(optim_result[row_index, 3:5])), collapse = ","))
 }
 rm(row_index, cum_data, diff_data)
+optim_result = optim_result[, -which(names(optim_result) %in% c("convergence"))] # remove unusing column
 ```
 
 
 ## Hierarchical Clustering
 
-```{r}
+```{r hierarchicalClusteringFunctions}
+# Function to calculate single linkage distance
+f_single_linkage = function(cluster_1, cluster_2) {
+  minDistance = Inf
+  
+  # Iterate through the cluster
+  for(row_index_1 in 1:length(cluster_1[, 1])) {
+    for(row_index_2 in 1:length(cluster_2[, 1])) {
+      # Extract values
+      value_1 = as.numeric(unlist(unname(cluster_1[row_index_1, 2:4])))
+      value_2 = as.numeric(unlist(unname(cluster_2[row_index_2, 2:4])))
+      
+      # calculate new minDistance
+      currentDistance = sqrt(sum((value_1 - value_2)^2))
+      if(minDistance > currentDistance) {
+        minDistance = currentDistance
+      }
+    }
+  }
+  
+  return(minDistance)
+}
 
+# Function to calculate complete linkage distance
+f_complete_linkage = function(cluster_1, cluster_2) {
+  maxDistance = -Inf
+  
+  # Iterate through the cluster
+  for(row_index_1 in 1:length(cluster_1[, 1])) {
+    for(row_index_2 in 1:length(cluster_2[, 1])) {
+      # Extract values
+      value_1 = as.numeric(unlist(unname(cluster_1[row_index_1, 2:4])))
+      value_2 = as.numeric(unlist(unname(cluster_2[row_index_2, 2:4])))
+      
+      # calculate new maxDistance
+      currentDistance = sqrt(sum((value_1 - value_2)^2))
+      if(maxDistance < currentDistance) {
+        maxDistance = currentDistance
+      }
+    }
+  }
+  
+  return(maxDistance)
+}
+
+f_hierarchical_clustering = function(data, linkage_FUN, k) {
+  # Initially, Each entry compose one cluster
+  clustering_result = data
+  clustering_result = split(clustering_result, seq(nrow(clustering_result)))
+  for(cluster_index in 1:length(clustering_result)) {
+    clustering_result[[cluster_index]] =
+      data.frame(matrix(unlist(clustering_result[[cluster_index]]), nrow = 1, byrow = TRUE))
+  }
+  
+  while(length(clustering_result) > k) {
+    # Initialize Search
+    minDistance = Inf
+    mergeTarget = c(-1, -1)
+    
+    # Iterate through clusters
+    for(cluster_index_1 in 1:length(clustering_result)) {
+      cluster_1 = clustering_result[[cluster_index_1]]
+      
+      for(cluster_index_2 in cluster_index_1:length(clustering_result)) {
+        cluster_2 = clustering_result[[cluster_index_2]]
+        
+        # Only valid when choosing two different cluster
+        if(cluster_index_1 != cluster_index_2) {
+          # Update Merge Target
+          currentDistance = linkage_FUN(cluster_1, cluster_2)
+          if(currentDistance < minDistance) { # compute distance
+            minDistance = currentDistance
+            mergeTarget = c(cluster_index_1, cluster_index_2)
+          }
+        }
+      }
+    }
+    
+    # Merge Two cluster
+    clustering_result[[mergeTarget[1]]] = 
+      rbind(clustering_result[[mergeTarget[1]]], clustering_result[[mergeTarget[2]]])
+    clustering_result[[mergeTarget[[2]]]] = NULL
+    
+    print(paste("Merge", mergeTarget[1], mergeTarget[2], "|", length(clustering_result), "cluster in the list"))
+  }
+  
+  # Convert result to dataframe
+  for(cluster_index in 1:length(clustering_result)) { # Add new column indicating cluster
+    clustering_result[[cluster_index]]$cluster =
+      rep(cluster_index - 1, times = length(clustering_result[[cluster_index]][,1]))
+  }
+  final = clustering_result[[1]] # combine dataframes into one dataframe
+  for(cluster_index in 2:length(clustering_result)) {
+    final = rbind(final, clustering_result[[cluster_index]])
+  }
+  # sort
+  final = final[order(final$X1), ]
+  
+  return(final)
+}
+```
+
+```{r singleLinkage}
+# Get clustering Result
+hacs = f_hierarchical_clustering(optim_result, f_single_linkage, 6)
+
+# Q5: Input the clusters from single linkage hierarchical clustering
+output = paste(sep = "\n",
+               output, "@hacs",
+               paste(as.vector(unname(hacs$cluster)), collapse = ","))
+rm(hacs)
+```
+
+```{r hacc}
+# Get clustering Result
+hacc = f_hierarchical_clustering(optim_result, f_complete_linkage, 6)
+
+# Q6: Input the clusters from single linkage hierarchical clustering
+output = paste(sep = "\n",
+               output, "@hacc",
+               paste(as.vector(unname(hacc$cluster)), collapse = ","))
+
+rm(hacc, f_complete_linkage, f_hierarchical_clustering, f_single_linkage)
+```
+
+
+## K-means clustering
+
+```{r kMeansClusteringFunction}
+f_k_means = function(data, k) {
+  # Random Initialization of centers
+  center = list() ## list to store centers
+  center_index = sample(1:length(data[, 1]), size = k)
+  for(current_index in center_index) {
+    center[[length(center) + 1]] = data[current_index, 2:4]
+  }
+  data$cluster = rep(-1, times = length(data[, 1]))
+  
+  # Find Initial cluster
+  for(data_index in 1:length(data[, 1])) {
+    minDistance = Inf
+    minCluster = -1
+    value_1 = as.numeric(unlist(unname(data[data_index, 2:4])))
+    
+    for(center_index in 1:k) {
+      value_2 = as.numeric(unlist(unname(center[[center_index]])))
+      distance = sqrt(sum((value_1 - value_2)^2))
+      
+      # Find the best cluster
+      if(distance < minDistance) {
+        minCluster = center_index
+        minDistance = distance
+      }
+    }
+    
+    # Assign cluster
+    data[data_index, "cluster"] = minCluster
+  }
+  
+  # Update until clusters do not change
+  keepUpdate = TRUE
+  
+  while(keepUpdate) {
+    # Update center
+    prevCenter = center
+    for(center_index in 1:k) {
+      data_center = data[which(data$cluster == center_index), ]
+      center[[center_index]]$"L" = round(mean(as.numeric(data_center$"L")), 4)
+      center[[center_index]]$"k" = round(mean(as.numeric(data_center$"k")), 4)
+      center[[center_index]]$"x_0" = round(mean(as.numeric(data_center$"x_0")), 4)
+    }
+    
+    # Check for termination
+    checker = 0
+    for(center_index in 1:k) {
+      if(all(center[[center_index]] == prevCenter[[center_index]])) {
+        checker = checker + 1
+      }
+    }
+    print(paste("checker:", checker))
+    if(checker == k) {
+      keepUpdate = FALSE
+      break
+    }
+    
+    # update cluster
+    for(data_index in 1:length(data[, 1])) {
+      minDistance = Inf
+      minCluster = -1
+      value_1 = as.numeric(unlist(unname(data[data_index, 2:4])))
+      
+      for(center_index in 1:k) {
+        value_2 = as.numeric(unlist(unname(center[[center_index]])))
+        distance = sqrt(sum((value_1 - value_2)^2))
+        
+        # Find the best cluster
+        if(distance < minDistance) {
+          minCluster = center_index
+          minDistance = distance
+        }
+      }
+      
+      # Assign cluster
+      data[data_index, "cluster"] = minCluster
+    }
+  }
+  
+  return(list(data = data, center = center))
+}
+```
+
+```{r kMeansClustering}
+k_mean_result = f_k_means(optim_result, 6)
+
+# Q7: Input the clusters from k means clustering
+output = paste(sep = "\n", output, "@kmeans",
+               paste(as.vector(as.numeric(unname(k_mean_result[["data"]][, "cluster"])) - 1), collapse = ","))
 ```
 
 

@@ -21,10 +21,10 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
   - Related Question: Q1, Q2
 - Fit Parametric Model
   - Related Question: Q3, Q4
-- Hierarchical Clustering (Single Linkage and Complete Linkage)
-- K means clustering
-
-### Key Ideas of Implementation
+- Hierarchical Clustering (Single Linkage and Complete Linkage, Use Euclidean distance, k = 6)
+  - Related Question: Q5, Q6
+- K-means clustering (Use Euclidean distance, k = 6)
+  - Related Question: Q7, Q8, Q9
 
 
 ## Questions
@@ -36,3 +36,9 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
   Briefly explain the method you use to obtain the parameters. (Auto-grade will assign 5/5 for anything you enter, but I will go through them manually after the final exam to check if it is something trivial.)
 - **Q4**  
   (`parameters`) Input the parameter estimates as a matrix, one row for each country (more than 100 less than 200 lines, each line contains at least 3 numbers, comma separated, rounded to 2 decimal places). Call the number of row n and the number of columns m for later questions. Please do not include an index column or a column with country names etc.
+- **Q5**  
+  (`hacs`) Input the clusters from single linkage hierarchical clustering (one line containing n integers from 0 to the k-1, comma separated).
+- **Q6**  
+  (`hacc`) Input the clusters from complete linkage hierarchical clustering (one line containing n integers from 0 to the k-1, comma separated).
+- **Q7**  
+  (`kmeans`) Input the clusters from k means clustering (one line containing n integers from 0 to the k-1, comma separated).
