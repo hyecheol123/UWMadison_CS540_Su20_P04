@@ -98,6 +98,99 @@ Initial value of x_0 is midpoint of given timeframe (104), L's initial value is 
 ```
 
 ```{r parametricModel}
+# Calculate sum of L1 loss for all data entries in one batch
+f_L1 = function(data, par) {
+  ## retrieve parameters
+  L = par[1]
+  k = par[2]
+  x_0 = par[3]
+  
+  ## Retrieve real value and predicted value
+  real = data[2:length(data)] ## country name at index 1
+  pred = lapply(1:(length(data) - 1), function(x) L / (1 + exp((-1) * k * (x - x_0))))
+  ## Calculate L1 loss
+  loss = sum(abs(pred - real))
+  
+  return(loss)
+}
+
+# Wrapper function to call optim() to find parameters
+f_optim_wrapper = function(arg) {
+  data_current = arg$data
+  par_current = arg$par
+  result = optim(fn = f_L1, data = data_current, par = par_current,
+                 method = "Nelder-Mead", ## Not using derivatives
+		             control = list(maxit = 1000000))
+  return(c(data_current[1], result$convergence,
+           round(result$par[1], 2), round(result$par[2], 2), round(result$par[3], 2)))
+}
+
+# Arguments
+arg_list = list()
+for(row_index in 1:length(cum_data[,1])) {
+  data = cum_data[row_index,]
+  arg = list(data = data, par = c(max(data[2:length(data)]), 1, 104))
+  arg_list[[row_index]] = arg
+}
+rm(data, arg, row_index)
+
+# Run optim() Parallel
+if(.Platform$OS.type == "windows") { # on Windows PC
+  cluster = makePSOCKcluster(names = n.cores)
+  clusterEvalQ(cl = cluster, expr = { # Each Cluster needs to load helper methods
+    # Calculate sum of L1 loss for all data entries in one batch
+    f_L1 = function(data, par) {
+      ## retrieve parameters
+      L = par[1]
+      k = par[2]
+      x_0 = par[3]
+      
+      ## Retrieve real value and predicted value
+      real = data[2:length(data)] ## country name at index 1
+      pred = lapply(1:(length(data) - 1), function(x) L / (1 + exp((-1) * k * (x - x_0))))
+      ## Calculate L1 loss
+      loss = sum(abs(pred - real))
+      
+      return(loss)
+    }
+    
+    # Wrapper function to call optim() to find parameters
+    f_optim_wrapper = function(arg) {
+      data_current = arg$data
+      par_current = arg$par
+      result = optim(fn = f_L1, data = data_current, par = par_current,
+                     method = "Nelder-Mead", ## Not using derivatives
+    		             control = list(maxit = 1000000))
+      return(c(data_current[1], result$convergence,
+               round(result$par[1], 2), round(result$par[2], 2), round(result$par[3], 2)))
+    }
+  })
+  optim_result <- parLapply(cl = cluster, X = arg_list, fun = f_optim_wrapper)
+  stopCluster(cl = cluster)
+} else { # on Mac or Linux.
+  optim_result <- mclapply(X = arg_list, FUN = f_optim_wrapper, mc.cores = n.cores)
+}
+rm(cluster, arg_list, f_L1, f_optim_wrapper)
+
+# Sort by Country Name
+optim_result <- data.frame(matrix(unlist(optim_result), nrow=length(optim_result), byrow=TRUE))
+optim_result = optim_result[(order(optim_result[, 1])), ]
+rownames(optim_result) = optim_result[, 1]
+colnames(optim_result) = c("Country.Region", "convergence", "L", "k", "x_0")
+
+# Q4 Input the parameter estimates as a matrix, one row for each country
+output = paste(sep = "\n", output, "@parameters")
+for(row_index in 1:length(optim_result[, 1])) {
+  output = paste(sep = "\n", output,
+                 paste(as.vector(unname(optim_result[row_index, 3:5])), collapse = ","))
+}
+rm(row_index, cum_data, diff_data)
+```
+
+
+## Hierarchical Clustering
+
+```{r}
 
 ```
 
