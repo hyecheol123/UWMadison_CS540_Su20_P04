@@ -1,0 +1,53 @@
+---
+title: "UWMadison_CS540_Su20_P04"
+author: "Hyecheol (Jerry) Jang"
+date: "8/18/2020"
+output: html_document
+---
+
+## Initialization
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+
+# Install Required Packages
+if(!require("plyr")) {
+  install.packages("plyr")
+  library("plyr")
+}
+```
+
+```{r initialization}
+# Write output file header
+output = "Outputs:\n@id\njang52"
+```
+
+
+## Data Pre-process
+
+```{r dataPreprocess}
+# Read Data
+cum_data = read.csv(file = "time_series_covid19_deaths_global.csv")
+## Combine multiple rows of same country
+cum_data = ddply(cum_data, "Country.Region",numcolwise(sum)) ## ddply in plyr
+## Remove unnecessary columns
+rownames(cum_data) = cum_data[,"Country.Region"]
+cum_data = cum_data[, -which(names(cum_data) %in% c("Province.State", "Lat", "Long", "Country.Region"))]
+
+# Q1: Enter the cumulative time series for the US and Canada
+output = paste(output, "@original",
+               paste(as.vector(unname(cum_data["US",])), collapse = ","),
+               paste(as.vector(unname(cum_data["Canada",])), collapse = ","),
+               sep = "\n")
+
+```
+
+
+## Post Operations
+
+```{r cleanup}
+write(output, file = "output.txt", append = FALSE)
+rm(list = ls())
+```
+

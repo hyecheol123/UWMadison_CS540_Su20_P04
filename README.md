@@ -18,6 +18,7 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
 
 ## Tasks
 - Data pre-processing
+  - Related Question: Q1
 - Fit Parametric Model
 - Hierarchical Clustering (Single Linkage and Complete Linkage)
 - K means clustering
@@ -26,3 +27,5 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
 
 
 ## Questions
+- **Q1**  
+  (`original`) Enter the cumulative time series for the US and Canada (remember to add up the numbers from each state or province) (two lines, each line containing integers, comma separated).
