@@ -73,28 +73,40 @@ rownames(diff_data) = diff_data[, 1]
 colnames(diff_data) = colnames(cum_data)
 rm(cluster, f_diff_data_row)
 
-# Clean-up data
-cum_data = cum_data[, -which(names(cum_data) %in% c("Country.Region"))]
-diff_data = diff_data[, -which(names(diff_data) %in% c("Country.Region"))]
-
 # Q1: Enter the cumulative time series for the US and Canada
 output = paste(output, "@original",
-               paste(as.vector(unname(cum_data["US",])), collapse = ","),
-               paste(as.vector(unname(cum_data["Canada",])), collapse = ","),
+               paste(as.vector(unname(cum_data["US",2:length(cum_data)])), collapse = ","),
+               paste(as.vector(unname(cum_data["Canada",2:length(cum_data)])), collapse = ","),
                sep = "\n")
 
 # Q2: Enter the differenced time series for the US and Canada
 output = paste(output, "@difference",
-               paste(as.vector(unname(diff_data["US",2:length(diff_data)])), collapse = ","),
-               paste(as.vector(unname(diff_data["Canada",2:length(diff_data)])), collapse = ","),
+               paste(as.vector(unname(diff_data["US",3:length(diff_data)])), collapse = ","),
+               paste(as.vector(unname(diff_data["Canada",3:length(diff_data)])), collapse = ","),
                sep = "\n")
+```
+
+
+## Fit Parametric Model
+
+```{r Q3_explanation}
+output = paste(sep = "\n", output, "@answer_3",
+"I used optim() function of R in order to find parameters for logistic function: https://en.wikipedia.org/wiki/Logistic_function.
+For the loss, I used L1 norm (absolute value of difference between the real datapoint and the predicted point).
+While solving this optimiation problem, I used Nelder-Mead method as it does not require derivatives.
+Initial value of x_0 is midpoint of given timeframe (104), L's initial value is maximum value of data, and k's initial value is 1.")
+```
+
+```{r parametricModel}
+
 ```
 
 
 ## Post Operations
 
 ```{r cleanup}
-write(output, file = "output.txt", append = FALSE)
+output = paste(sep = "\n", output, "@answer_10", "None") # Footer for output file
+write(output, file = "output.txt", append = FALSE) # write results
 rm(list = ls())
 ```
 

@@ -20,6 +20,7 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
 - Data pre-processing
   - Related Question: Q1, Q2
 - Fit Parametric Model
+  - Related Question: Q3
 - Hierarchical Clustering (Single Linkage and Complete Linkage)
 - K means clustering
 
@@ -31,3 +32,5 @@ COVID-19 global deaths dataset from Johns Hopkins University: [link](https://git
   (`original`) Enter the cumulative time series for the US and Canada (remember to add up the numbers from each state or province) (two lines, each line containing integers, comma separated).
 - **Q2**  
   (`difference`) Enter the differenced time series for the US and Canada (compute the difference between consecutive numbers in the previous question, here, this time series represents the number of additional deaths each day) (two lines, each line containing integers, one less than the number of integers per line in the previous question, comma separated).
+- **Q3**  
+  Briefly explain the method you use to obtain the parameters. (Auto-grade will assign 5/5 for anything you enter, but I will go through them manually after the final exam to check if it is something trivial.)
