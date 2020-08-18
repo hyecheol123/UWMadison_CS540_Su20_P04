@@ -14,13 +14,19 @@ knitr::opts_chunk$set(echo = TRUE)
 # Install Required Packages
 if(!require("plyr")) {
   install.packages("plyr")
-  library("plyr")
+  stopifnot(require("plyr"))
+}
+if (!require("parallel")) { # for multicore computing functions
+  install.packages("parallel")
+  stopifnot(require("parallel"))
 }
 ```
 
 ```{r initialization}
 # Write output file header
 output = "Outputs:\n@id\njang52"
+# Parallel
+n.cores = detectCores()
 ```
 
 
@@ -32,8 +38,44 @@ cum_data = read.csv(file = "time_series_covid19_deaths_global.csv")
 ## Combine multiple rows of same country
 cum_data = ddply(cum_data, "Country.Region",numcolwise(sum)) ## ddply in plyr
 ## Remove unnecessary columns
+cum_data = cum_data[, -which(names(cum_data) %in% c("Province.State", "Lat", "Long"))]
+## Sort by country name
+cum_data = cum_data[(order(cum_data$Country.Region)), ]
 rownames(cum_data) = cum_data[,"Country.Region"]
-cum_data = cum_data[, -which(names(cum_data) %in% c("Province.State", "Lat", "Long", "Country.Region"))]
+
+# Generate difference time series
+## Function to retrieve difference time series for each row
+f_diff_data_row = function(row_index, dataset) {
+  ## retrieve 
+  original = dataset[row_index, ]
+  diff = original
+  ## Calculate difference
+  for(col_index in 3:length(diff)) {
+    diff[col_index] = original[col_index] - original[col_index - 1]
+  }
+  
+  return(diff)
+}
+## Parallel Operation
+if (.Platform$OS.type == "windows") { # on Windows PC
+  cluster = makePSOCKcluster(names = n.cores)
+  clusterEvalQ(cl = cluster, expr = "") 
+  diff_data <- parLapply(cl = cluster, X = 1:length(cum_data[, 1]), fun = f_diff_data_row, dataset = cum_data)
+  stopCluster(cl = cluster)
+} else { # on Mac or Linux.
+  diff_data <- mclapply(X = 1:length(cum_data[, 1]), FUN = f_diff_data_row, dataset = cum_data, mc.cores = n.cores)
+}
+diff_data <- data.frame(matrix(unlist(diff_data), nrow=length(diff_data), byrow=TRUE))
+## Sort by country name
+diff_data = diff_data[(order(diff_data[, 1])), ]
+rownames(diff_data) = diff_data[, 1]
+## Set column name
+colnames(diff_data) = colnames(cum_data)
+rm(cluster, f_diff_data_row)
+
+# Clean-up data
+cum_data = cum_data[, -which(names(cum_data) %in% c("Country.Region"))]
+diff_data = diff_data[, -which(names(diff_data) %in% c("Country.Region"))]
 
 # Q1: Enter the cumulative time series for the US and Canada
 output = paste(output, "@original",
@@ -41,6 +83,11 @@ output = paste(output, "@original",
                paste(as.vector(unname(cum_data["Canada",])), collapse = ","),
                sep = "\n")
 
+# Q2: Enter the differenced time series for the US and Canada
+output = paste(output, "@difference",
+               paste(as.vector(unname(diff_data["US",2:length(diff_data)])), collapse = ","),
+               paste(as.vector(unname(diff_data["Canada",2:length(diff_data)])), collapse = ","),
+               sep = "\n")
 ```
 
 
@@ -50,4 +97,5 @@ output = paste(output, "@original",
 write(output, file = "output.txt", append = FALSE)
 rm(list = ls())
 ```
+
 
